@@ -2,10 +2,12 @@ from anthropic import Anthropic
 from config import IDENTITY, TOOLS, MODEL, RAG_PROMPT
 from dotenv import load_dotenv
 from google_drive_utils import get_drive_service, get_documents, get_document_content
-from embedding_utils import create_embeddings, create_faiss_index, search_similar
+from embedding_utils import EmbeddingUtil, create_embeddings, create_faiss_index, search_similar
 import numpy as np
+import logging
 
 load_dotenv()
+logging.basicConfig(level=logging.INFO)
 
 class ChatBot:
     def __init__(self, session_state):
@@ -13,8 +15,9 @@ class ChatBot:
         self.session_state = session_state
         self.drive_service = get_drive_service()
         self.documents = self.load_documents()
-        self.embeddings = create_embeddings(self.documents)
-        self.index = create_faiss_index(self.embeddings)
+        self.embedding_util = EmbeddingUtil()
+        self.embeddings = self.embedding_util.create_embeddings(self.documents)
+        self.index = self.embedding_util.create_faiss_index(self.embeddings)
 
     def load_documents(self):
         files = get_documents(self.drive_service)
@@ -22,10 +25,12 @@ class ChatBot:
         for file in files:
             content = get_document_content(self.drive_service, file['id'])
             documents.append(content)
+            logging.info(f"Loaded document: {file['name']}")
+        logging.info(f"Total documents loaded: {len(documents)}")
         return documents
 
     def get_relevant_context(self, query):
-        similar_indices = search_similar(query, self.index, self.embeddings)
+        similar_indices = self.embedding_util.search_similar(query, self.index, self.embeddings)
         context = "\n".join([self.documents[i] for i in similar_indices])
         return context
 
@@ -69,8 +74,35 @@ class ChatBot:
 
     def handle_tool_use(self, func_name, func_params):
         if func_name == "get_course_information":
-            # Implement the logic to retrieve course information
-            # This is a placeholder implementation
-            return f"Here's information about {func_params['course_name']} at {func_params['institution']} (Level: {func_params['course_level']}): [Course details would be retrieved here]"
+            institution = func_params['institution']
+            course_level = func_params['course_level']
+            course_name = func_params['course_name']
+            
+            # This is where you would typically query a database or structured data source
+            # For now, we'll use a dictionary as a simple example
+            course_info = {
+                "Dental College": {
+                    "undergraduate": {
+                        "Bachelor of Dental Surgery": "5-year program focusing on oral health and dental procedures."
+                    },
+                    "postgraduate": {
+                        "Master of Dental Surgery": "3-year specialized program in various dental disciplines."
+                    }
+                },
+                "Engineering College": {
+                    "undergraduate": {
+                        "B.Tech in Computer Science": "4-year program covering software development, algorithms, and computer systems."
+                    },
+                    "postgraduate": {
+                        "M.Tech in Structural Engineering": "2-year advanced program in structural design and analysis."
+                    }
+                }
+                # Add more institutions and courses as needed
+            }
+            
+            if institution in course_info and course_level in course_info[institution] and course_name in course_info[institution][course_level]:
+                return f"Information about {course_name} at JKKN {institution} ({course_level} level): {course_info[institution][course_level][course_name]}"
+            else:
+                return f"I'm sorry, I don't have specific information about the {course_name} course at JKKN {institution} for the {course_level} level. Please check the JKKN website or contact the admissions office for the most up-to-date information."
         else:
             return f"Tool use requested: {func_name} with parameters {func_params}"
