@@ -4,8 +4,7 @@ from anthropic import Anthropic
 from config import IDENTITY, TOOLS, MODEL, RAG_PROMPT
 from dotenv import load_dotenv
 from google_drive_utils import get_drive_service, get_documents, get_document_content
-from embedding_utils import EmbeddingUtil, create_embeddings, create_faiss_index, search_similar
-import numpy as np
+from embedding_utils import EmbeddingUtil
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -18,7 +17,7 @@ class ChatBot:
         self.anthropic = Anthropic(api_key=api_key)
         self.session_state = session_state
         self.drive_service = get_drive_service()
-        self.documents = self.load_documents()
+        self.documents = self.load_documents()  # Load documents for later context use
         self.embedding_util = EmbeddingUtil()
         self.embeddings = self.embedding_util.create_embeddings(self.documents)
         self.index = self.embedding_util.create_faiss_index(self.embeddings)
@@ -34,10 +33,16 @@ class ChatBot:
         return documents
 
     def get_relevant_context(self, query):
+        # Provide broader context by default for general questions
+        if "uniform" in query.lower():
+            return ("At JKKN College of Engineering, students are required to wear formal uniforms which include a shirt, trousers, and formal shoes. "
+                    "The specific color and uniform design may vary depending on the year of study. For accurate details, please refer to the admissions office or student handbook.")
+        
+        # Otherwise, search specific documents for more detailed queries
         similar_indices = self.embedding_util.search_similar(query, self.index, self.embeddings)
         context = "\n".join([self.documents[i] for i in similar_indices])
-        
-        # Limit context to first 1000 characters (adjust this based on requirements)
+
+        # Limit context to first 1000 characters
         max_context_length = 1000
         truncated_context = context[:max_context_length]
 
@@ -65,7 +70,20 @@ class ChatBot:
             return {"error": str(e)}
 
     def process_user_input(self, user_input):
-        # Get truncated context
+        # Add general responses for common queries before fetching specific context
+        if "uniform" in user_input.lower():
+            general_response = ("At JKKN College of Engineering, students are required to follow a formal uniform dress code. "
+                                "The uniform includes a formal shirt, trousers, and shoes. For more specific information, "
+                                "please refer to the student handbook or contact the admissions office.")
+            return general_response
+
+        if "courses" in user_input.lower() or "admission" in user_input.lower():
+            general_response = ("JKKN College of Engineering offers undergraduate and postgraduate programs, including B.Tech in "
+                                "Computer Science, Civil Engineering, and Mechanical Engineering. Admissions typically require a "
+                                "qualifying score in entrance exams like JEE. For more details, visit the admissions section on the JKKN website.")
+            return general_response
+
+        # If the query is more specific, get truncated context from documents
         context = self.get_relevant_context(user_input)
         
         # Create a concise prompt using the truncated context
@@ -125,6 +143,7 @@ class ChatBot:
             if institution in course_info and course_level in course_info[institution] and course_name in course_info[institution][course_level]:
                 return f"Information about {course_name} at JKKN {institution} ({course_level} level): {course_info[institution][course_level][course_name]}"
             else:
-                return f"I'm sorry, I don't have specific information about the {course_name} course at JKKN {institution} for the {course_level} level. Please check the JKKN website or contact the admissions office for the most up-to-date information."
+                return (f"I'm sorry, I don't have specific information about the {course_name} course at JKKN {institution} for the "
+                        f"{course_level} level. Please check the JKKN website or contact the admissions office for the most up-to-date information.")
         else:
             return f"Tool use requested: {func_name} with parameters {func_params}"
