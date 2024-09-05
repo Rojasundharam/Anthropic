@@ -1,4 +1,5 @@
 import os
+import json
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
@@ -10,7 +11,13 @@ SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 def get_drive_service():
     creds = None
     if 'google_auth_token' in st.session_state:
-        creds = Credentials.from_authorized_user_info(st.session_state['google_auth_token'], SCOPES)
+        try:
+            # Parse the JSON string back into a dictionary
+            token_info = json.loads(st.session_state['google_auth_token'])
+            creds = Credentials.from_authorized_user_info(token_info, SCOPES)
+        except json.JSONDecodeError:
+            st.error("Error decoding Google auth token. Please authenticate again.")
+            del st.session_state['google_auth_token']
     
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
@@ -32,6 +39,7 @@ def get_drive_service():
                 try:
                     flow.fetch_token(code=auth_code)
                     creds = flow.credentials
+                    # Store the token info as a JSON string
                     st.session_state['google_auth_token'] = creds.to_json()
                 except Exception as e:
                     st.error(f"An error occurred: {str(e)}")
