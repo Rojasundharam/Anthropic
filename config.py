@@ -26,9 +26,8 @@ Please provide a concise and accurate answer based solely on the given context. 
 # Tool definition for retrieving course information
 TOOLS = [
     {
-        "type": "function",
         "name": "get_course_information",
-        "input_schema": {  # Adding input_schema
+        "input_schema": {
             "type": "object",
             "properties": {
                 "institution": {
@@ -59,3 +58,4 @@ As Aditi, the AI assistant for JKKN Educational Institutions, your primary tasks
 
 Ensure that your responses are grounded in the information available in the institutional documents to maintain accuracy and relevance.
 """
+
