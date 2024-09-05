@@ -4,7 +4,7 @@ from config import TASK_SPECIFIC_INSTRUCTIONS
 from google_drive_utils import get_drive_service
 
 def main():
-    st.title("Chat with JKKN Assist, JKKN Educational Institutions' Assistant🤖")
+    st.title("JKKN Assist🤖")
     
     drive_service = get_drive_service()
     
