@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Model information
-MODEL = "claude-3-5-sonnet-20240620"  # Updated to your latest specified model
+MODEL = "claude-3-5-sonnet-20240620"
 
 # Identity definition for the AI assistant
 IDENTITY = """
@@ -56,5 +56,4 @@ As Aditi, the AI assistant for JKKN Educational Institutions, your primary tasks
 4. If a question cannot be answered with the available information, politely inform the user and offer help with related topics you can assist with.
 5. Always maintain a warm, helpful, and professional tone when interacting with users.
 
-Ensure that your responses are grounded in the information available in the institutional documents to maintain accuracy and relevance.
-"""
+Ensure that your responses are grounded in the information available in the institutional documents to maintain accuracy and relevance."""
