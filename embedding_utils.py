@@ -1,36 +1,20 @@
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
-import os
-import pickle
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+import faiss
 
-SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+def create_embeddings(documents):
+    vectorizer = TfidfVectorizer()
+    embeddings = vectorizer.fit_transform(documents)
+    return embeddings.toarray()
 
-def get_drive_service():
-    creds = None
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
-    return build('drive', 'v3', credentials=creds)
+def create_faiss_index(embeddings):
+    dimension = embeddings.shape[1]
+    index = faiss.IndexFlatL2(dimension)
+    index.add(embeddings.astype('float32'))
+    return index
 
-def get_documents(service):
-    results = service.files().list(
-        q="mimeType='application/vnd.google-apps.document'",
-        spaces='drive',
-        fields="nextPageToken, files(id, name, mimeType)"
-    ).execute()
-    return results.get('files', [])
-
-def get_document_content(service, file_id):
-    document = service.files().export(fileId=file_id, mimeType='text/plain').execute()
-    return document.decode('utf-8')
+def search_similar(query, index, embeddings, k=5):
+    vectorizer = TfidfVectorizer()
+    query_embedding = vectorizer.fit_transform([query]).toarray().astype('float32')
+    distances, indices = index.search(query_embedding, k)
+    return indices[0]
