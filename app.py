@@ -5,13 +5,15 @@ from google_drive_utils import get_drive_service
 
 def main():
     st.title("JKKN Assist🤖")
-    
+
+    # Initialize Google Drive authentication
     drive_service = get_drive_service()
     
     if drive_service is None:
         st.write("Please authenticate with Google Drive to continue.")
         return
 
+    # Initialize session state for messages and chatbot
     if "messages" not in st.session_state:
         st.session_state.messages = [
             {'role': "user", "content": TASK_SPECIFIC_INSTRUCTIONS},
@@ -26,23 +28,31 @@ def main():
             st.info("Please ensure the ANTHROPIC_API_KEY is correctly set in your .env file.")
             return
 
-    # Display user and assistant messages skipping the first two
+    # Display chat history (skipping initial instruction messages)
     for message in st.session_state.messages[2:]:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-    
+
+    # Input field for the user's question
     if user_msg := st.chat_input("Type your question about JKKN institutions here..."):
+        st.session_state.messages.append({'role': 'user', 'content': user_msg})
         st.chat_message("user").markdown(user_msg)
-        
+
+        # Assistant's response processing
         with st.chat_message("assistant"):
             with st.spinner("JKKN Assist is thinking..."):
                 response_placeholder = st.empty()
-                full_response = st.session_state.chatbot.process_user_input(user_msg)
-                response_placeholder.markdown(full_response)
-
-    # Add feedback buttons
+                try:
+                    # Process user input through the chatbot and append the response
+                    full_response = st.session_state.chatbot.process_user_input(user_msg)
+                    st.session_state.messages.append({'role': 'assistant', 'content': full_response})
+                    response_placeholder.markdown(full_response)
+                except Exception as e:
+                    st.error(f"Error processing response: {str(e)}")
+    
+    # Add feedback buttons after interaction
     if len(st.session_state.messages) > 2:
-        col1, col2, col3 = st.columns([1,1,5])
+        col1, col2, col3 = st.columns([1, 1, 5])
         with col1:
             if st.button("👍"):
                 st.success("Thank you for your positive feedback!")
