@@ -4,17 +4,14 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
-from requests_oauthlib import OAuth2Session
-import webbrowser
+import streamlit as st
 
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
-REDIRECT_URI = 'http://localhost:8501/'
 
 def get_drive_service():
     creds = None
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
+    if 'google_auth_token' in st.session_state:
+        creds = Credentials.from_authorized_user_info(st.session_state['google_auth_token'], SCOPES)
     
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
@@ -23,23 +20,19 @@ def get_drive_service():
             flow = Flow.from_client_secrets_file(
                 'credentials.json',
                 scopes=SCOPES,
-                redirect_uri=REDIRECT_URI
+                redirect_uri=st.get_option("server.address") + "/callback"
             )
             
-            authorization_url, _ = flow.authorization_url(prompt='consent')
+            auth_url, _ = flow.authorization_url(prompt='consent')
             
-            print(f"Please visit this URL to authorize the application: {authorization_url}")
-            webbrowser.open(authorization_url)
+            st.write(f"Please visit this URL to authorize the application: [Authorize]({auth_url})")
+            auth_code = st.text_input("Enter the authorization code:")
             
-            redirect_response = input("Paste the full redirect URL here: ")
-            
-            flow.fetch_token(authorization_response=redirect_response)
-            
-            creds = flow.credentials
-
-        # Save the credentials for the next run
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
+            if auth_code:
+                flow.fetch_token(code=auth_code)
+                creds = flow.credentials
+                st.session_state['google_auth_token'] = creds.to_json()
+                st.experimental_rerun()
 
     return build('drive', 'v3', credentials=creds)
 
