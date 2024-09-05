@@ -1,41 +1,55 @@
+import os
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import Flow
+from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
 import streamlit as st
-from chatbot import ChatBot
-from config import TASK_SPECIFIC_INSTRUCTIONS
-from google_drive_utils import get_drive_service
 
-def main():
-    st.title("JKKN Assistant🤖")
-    
-    drive_service = get_drive_service()
-    
-    if drive_service is None:
-        st.write("Please authenticate with Google Drive to continue.")
-        return
+SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 
-    if "messages" not in st.session_state:
-        st.session_state.messages = [
-            {'role': "user", "content": TASK_SPECIFIC_INSTRUCTIONS},
-            {'role': "assistant", "content": "Understood"},
-        ]
+def get_drive_service():
+    creds = None
+    if 'google_auth_token' in st.session_state:
+        creds = Credentials.from_authorized_user_info(st.session_state['google_auth_token'], SCOPES)
     
-    if "chatbot" not in st.session_state:
-        st.session_state.chatbot = ChatBot(st.session_state)
-    
-    # Display user and assistant messages skipping the first two
-    for message in st.session_state.messages[2:]:
-        # ignore tool use blocks
-        if isinstance(message["content"], str):
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-    
-    if user_msg := st.chat_input("Type your message here..."):
-        st.chat_message("user").markdown(user_msg)
-        
-        with st.chat_message("assistant"):
-            with st.spinner("JKKN Assist is thinking..."):
-                response_placeholder = st.empty()
-                full_response = st.session_state.chatbot.process_user_input(user_msg)
-                response_placeholder.markdown(full_response)
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = Flow.from_client_secrets_file(
+                'credentials.json',
+                scopes=SCOPES,
+                redirect_uri='urn:ietf:wg:oauth:2.0:oob'
+            )
+            
+            auth_url, _ = flow.authorization_url(prompt='consent')
+            
+            st.write("Please visit this URL to authorize the application:")
+            st.markdown(f"[Authorize]({auth_url})")
+            auth_code = st.text_input("Enter the authorization code:")
+            
+            if auth_code:
+                try:
+                    flow.fetch_token(code=auth_code)
+                    creds = flow.credentials
+                    st.session_state['google_auth_token'] = creds.to_json()
+                except Exception as e:
+                    st.error(f"An error occurred: {str(e)}")
+                    return None
 
-if __name__ == "__main__":
-    main()
+    if creds:
+        return build('drive', 'v3', credentials=creds)
+    else:
+        return None
+
+def get_documents(service):
+    results = service.files().list(
+        q="mimeType='application/vnd.google-apps.document'",
+        spaces='drive',
+        fields="nextPageToken, files(id, name, mimeType)"
+    ).execute()
+    return results.get('files', [])
+
+def get_document_content(service, file_id):
+    document = service.files().export(fileId=file_id, mimeType='text/plain').execute()
+    return document.decode('utf-8')

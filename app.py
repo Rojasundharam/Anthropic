@@ -4,7 +4,7 @@ from config import TASK_SPECIFIC_INSTRUCTIONS
 from google_drive_utils import get_drive_service
 
 def main():
-    st.title("JKKN Assistant🤖")
+    st.title("Chat with JKKN assist, JKKN Educational Institutions' Assistant🤖")
     
     drive_service = get_drive_service()
     
@@ -15,7 +15,7 @@ def main():
     if "messages" not in st.session_state:
         st.session_state.messages = [
             {'role': "user", "content": TASK_SPECIFIC_INSTRUCTIONS},
-            {'role': "assistant", "content": "Understood"},
+            {'role': "assistant", "content": "Understood, I'm ready to assist with inquiries about JKKN Educational Institutions."},
         ]
     
     if "chatbot" not in st.session_state:
@@ -28,11 +28,11 @@ def main():
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
     
-    if user_msg := st.chat_input("Type your message here..."):
+    if user_msg := st.chat_input("Type your question about JKKN institutions here..."):
         st.chat_message("user").markdown(user_msg)
         
         with st.chat_message("assistant"):
-            with st.spinner("JKKN Assist is thinking..."):
+            with st.spinner("JKNN Assist is thinking..."):
                 response_placeholder = st.empty()
                 full_response = st.session_state.chatbot.process_user_input(user_msg)
                 response_placeholder.markdown(full_response)
