@@ -1,5 +1,6 @@
 from sentence_transformers import SentenceTransformer
 import faiss
+import numpy as np
 
 class EmbeddingUtil:
     def __init__(self):
@@ -11,7 +12,8 @@ class EmbeddingUtil:
         :param documents: List of text documents
         :return: A list of embeddings for the input documents
         """
-        return self.model.encode(documents, convert_to_tensor=False)
+        embeddings = self.model.encode(documents, convert_to_tensor=False)
+        return np.array(embeddings)
 
     def create_faiss_index(self, embeddings):
         """
@@ -19,17 +21,20 @@ class EmbeddingUtil:
         :param embeddings: List of document embeddings
         :return: FAISS index
         """
-        index = faiss.IndexFlatL2(embeddings.shape[1])
+        dimension = embeddings.shape[1]
+        index = faiss.IndexFlatL2(dimension)  # L2 distance metric
         index.add(embeddings)
         return index
 
-    def search_similar(self, query_embedding, index, embeddings):
+    def search_similar(self, query, index, embeddings, k=5):
         """
         Search for similar embeddings based on the query.
-        :param query_embedding: Embedding of the query text
+        :param query: Query text
         :param index: FAISS index
         :param embeddings: List of document embeddings
+        :param k: Number of top results to return
         :return: List of indices of similar documents
         """
-        D, I = index.search(query_embedding, k=5)
-        return I[0]
+        query_embedding = self.create_embeddings([query])
+        _, indices = index.search(query_embedding, k)  # search for k nearest neighbors
+        return indices[0]
