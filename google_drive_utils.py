@@ -4,9 +4,11 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
-from google_auth_oauthlib.helpers import credentials_from_session
+from requests_oauthlib import OAuth2Session
+import webbrowser
 
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+REDIRECT_URI = 'http://localhost:8501/'
 
 def get_drive_service():
     creds = None
@@ -20,10 +22,18 @@ def get_drive_service():
         else:
             flow = Flow.from_client_secrets_file(
                 'credentials.json',
-                scopes=SCOPES
+                scopes=SCOPES,
+                redirect_uri=REDIRECT_URI
             )
             
-            flow.run_local_server(port=8501)
+            authorization_url, _ = flow.authorization_url(prompt='consent')
+            
+            print(f"Please visit this URL to authorize the application: {authorization_url}")
+            webbrowser.open(authorization_url)
+            
+            redirect_response = input("Paste the full redirect URL here: ")
+            
+            flow.fetch_token(authorization_response=redirect_response)
             
             creds = flow.credentials
 
