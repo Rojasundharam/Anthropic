@@ -72,11 +72,11 @@ class ChatBot:
         if "error" in response_message:
             return f"An error occurred: {response_message['error']}"
         
-        if response_message.content[0].type == "text":
+        if hasattr(response_message, 'content') and response_message.content:
             response_text = response_message.content[0].text
             self.session_state.messages.append(
                 {"role": "assistant", "content": response_text}
             )
             return response_text
         else:
-            raise Exception("Unexpected response type")
+            return "Sorry, there was an issue with retrieving the information."
