@@ -7,6 +7,7 @@ from googleapiclient.discovery import build
 import streamlit as st
 
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+REDIRECT_URI = 'http://localhost:8501/callback'  # Fixed redirect URI
 
 def get_drive_service():
     creds = None
@@ -20,7 +21,7 @@ def get_drive_service():
             flow = Flow.from_client_secrets_file(
                 'credentials.json',
                 scopes=SCOPES,
-                redirect_uri=st.get_option("server.address") + "/callback"
+                redirect_uri=REDIRECT_URI
             )
             
             auth_url, _ = flow.authorization_url(prompt='consent')
@@ -29,12 +30,18 @@ def get_drive_service():
             auth_code = st.text_input("Enter the authorization code:")
             
             if auth_code:
-                flow.fetch_token(code=auth_code)
-                creds = flow.credentials
-                st.session_state['google_auth_token'] = creds.to_json()
-                st.experimental_rerun()
+                try:
+                    flow.fetch_token(code=auth_code)
+                    creds = flow.credentials
+                    st.session_state['google_auth_token'] = creds.to_json()
+                    st.experimental_rerun()
+                except Exception as e:
+                    st.error(f"An error occurred: {str(e)}")
 
-    return build('drive', 'v3', credentials=creds)
+    if creds:
+        return build('drive', 'v3', credentials=creds)
+    else:
+        return None
 
 def get_documents(service):
     results = service.files().list(

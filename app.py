@@ -4,11 +4,12 @@ from config import TASK_SPECIFIC_INSTRUCTIONS
 from google_drive_utils import get_drive_service
 
 def main():
-    st.title("JKKN Assistant🤖")
+    st.title("Chat with Eva, Acme Insurance Company's Assistant🤖")
     
-    if 'google_auth_token' not in st.session_state:
+    drive_service = get_drive_service()
+    
+    if drive_service is None:
         st.write("Please authenticate with Google Drive to continue.")
-        get_drive_service()  # This will trigger the authentication flow
         return
 
     if "messages" not in st.session_state:
@@ -31,7 +32,7 @@ def main():
         st.chat_message("user").markdown(user_msg)
         
         with st.chat_message("assistant"):
-            with st.spinner("JKKN Assist is thinking..."):
+            with st.spinner("Eva is thinking..."):
                 response_placeholder = st.empty()
                 full_response = st.session_state.chatbot.process_user_input(user_msg)
                 response_placeholder.markdown(full_response)
