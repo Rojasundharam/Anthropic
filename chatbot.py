@@ -1,11 +1,11 @@
 import os
+import logging
 from anthropic import Anthropic
 from config import IDENTITY, TOOLS, MODEL, RAG_PROMPT
 from dotenv import load_dotenv
 from google_drive_utils import get_drive_service, get_documents, get_document_content
 from embedding_utils import EmbeddingUtil, create_embeddings, create_faiss_index, search_similar
 import numpy as np
-import logging
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -40,6 +40,13 @@ class ChatBot:
 
     def generate_message(self, messages, max_tokens):
         try:
+            logging.info(f"Sending request to Anthropic API:")
+            logging.info(f"Model: {MODEL}")
+            logging.info(f"System: {IDENTITY}")
+            logging.info(f"Max tokens: {max_tokens}")
+            logging.info(f"Messages: {messages}")
+            logging.info(f"Tools: {TOOLS}")
+            
             response = self.anthropic.messages.create(
                 model=MODEL,
                 system=IDENTITY,
@@ -49,6 +56,7 @@ class ChatBot:
             )
             return response
         except Exception as e:
+            logging.error(f"Anthropic API Error: {str(e)}")
             return {"error": str(e)}
 
     def process_user_input(self, user_input):
