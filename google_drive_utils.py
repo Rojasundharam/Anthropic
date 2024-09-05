@@ -20,18 +20,10 @@ def get_drive_service():
         else:
             flow = Flow.from_client_secrets_file(
                 'credentials.json',
-                scopes=SCOPES,
-                redirect_uri='http://localhost:8501'
+                scopes=SCOPES
             )
             
-            auth_url, _ = flow.authorization_url(prompt='consent')
-            
-            print(f"Please visit this URL to authorize the application: {auth_url}")
-            
-            # Wait for user to input the authorization code
-            auth_code = input("Enter the authorization code: ")
-            
-            flow.fetch_token(code=auth_code)
+            flow.run_local_server(port=8501)
             
             creds = flow.credentials
 
