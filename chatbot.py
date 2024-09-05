@@ -1,3 +1,4 @@
+import os
 from anthropic import Anthropic
 from config import IDENTITY, TOOLS, MODEL, RAG_PROMPT
 from dotenv import load_dotenv
@@ -11,7 +12,10 @@ logging.basicConfig(level=logging.INFO)
 
 class ChatBot:
     def __init__(self, session_state):
-        self.anthropic = Anthropic()
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise ValueError("ANTHROPIC_API_KEY not found in environment variables")
+        self.anthropic = Anthropic(api_key=api_key)
         self.session_state = session_state
         self.drive_service = get_drive_service()
         self.documents = self.load_documents()
