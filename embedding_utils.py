@@ -1,33 +1,22 @@
-import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
 import faiss
+import numpy as np
+from sentence_transformers import SentenceTransformer
 
 class EmbeddingUtil:
     def __init__(self):
-        self.vectorizer = TfidfVectorizer()
+        self.model = SentenceTransformer('all-MiniLM-L6-v2')  # Use any relevant model
 
     def create_embeddings(self, documents):
-        embeddings = self.vectorizer.fit_transform(documents)
-        return embeddings.toarray()
+        embeddings = self.model.encode(documents)
+        return embeddings
 
     def create_faiss_index(self, embeddings):
-        dimension = embeddings.shape[1]
-        index = faiss.IndexFlatL2(dimension)
-        index.add(embeddings.astype('float32'))
+        dimension = embeddings.shape[1]  # Embedding dimension
+        index = faiss.IndexFlatL2(dimension)  # Create a FAISS index
+        index.add(np.array(embeddings))  # Add document embeddings to the index
         return index
 
-    def search_similar(self, query, index, embeddings, k=5):
-        query_embedding = self.vectorizer.transform([query]).toarray().astype('float32')
-        distances, indices = index.search(query_embedding, k)
+    def search_similar(self, query, index, embeddings):
+        query_embedding = self.model.encode([query])  # Create embedding for the query
+        _, indices = index.search(query_embedding, k=5)  # Find top 5 similar documents
         return indices[0]
-
-embedding_util = EmbeddingUtil()
-
-def create_embeddings(documents):
-    return embedding_util.create_embeddings(documents)
-
-def create_faiss_index(embeddings):
-    return embedding_util.create_faiss_index(embeddings)
-
-def search_similar(query, index, embeddings, k=5):
-    return embedding_util.search_similar(query, index, embeddings, k)

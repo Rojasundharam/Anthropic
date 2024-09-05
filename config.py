@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Model information
-MODEL = "claude-3-5-sonnet-20240620"
+MODEL = "claude-3-5-sonnet-20240620"  # Updated to your latest specified model
 
 # Identity definition for the AI assistant
 IDENTITY = """
@@ -58,4 +58,3 @@ As Aditi, the AI assistant for JKKN Educational Institutions, your primary tasks
 
 Ensure that your responses are grounded in the information available in the institutional documents to maintain accuracy and relevance.
 """
-
