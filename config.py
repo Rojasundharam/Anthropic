@@ -27,26 +27,23 @@ Please provide a concise and accurate answer based solely on the given context. 
 TOOLS = [
     {
         "type": "function",
-        "name": "get_course_information",  # Add the name field here
-        "function": {
-            "name": "get_course_information",
-            "description": "Retrieve information on specific courses offered at JKKN institutions",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "institution": {
-                        "type": "string",
-                        "enum": ["Dental College", "Pharmacy College", "Nursing College", "Engineering College", "Allied Health Sciences", "Arts and Science College"]
-                    },
-                    "course_level": {
-                        "type": "string",
-                        "enum": ["undergraduate", "postgraduate"]
-                    },
-                    "course_name": {"type": "string"}
+        "name": "get_course_information",
+        "input_schema": {  # Adding input_schema
+            "type": "object",
+            "properties": {
+                "institution": {
+                    "type": "string",
+                    "enum": ["Dental College", "Pharmacy College", "Nursing College", "Engineering College", "Allied Health Sciences", "Arts and Science College"]
                 },
-                "required": ["institution", "course_level", "course_name"]
-            }
-        }
+                "course_level": {
+                    "type": "string",
+                    "enum": ["undergraduate", "postgraduate"]
+                },
+                "course_name": {"type": "string"}
+            },
+            "required": ["institution", "course_level", "course_name"]
+        },
+        "description": "Retrieve information on specific courses offered at JKKN institutions"
     }
 ]
 
