@@ -36,7 +36,12 @@ class ChatBot:
     def get_relevant_context(self, query):
         similar_indices = self.embedding_util.search_similar(query, self.index, self.embeddings)
         context = "\n".join([self.documents[i] for i in similar_indices])
-        return context
+        
+        # Limit context to first 1000 characters (adjust this based on requirements)
+        max_context_length = 1000
+        truncated_context = context[:max_context_length]
+
+        return truncated_context
 
     def generate_message(self, messages, max_tokens):
         try:
@@ -60,19 +65,26 @@ class ChatBot:
             return {"error": str(e)}
 
     def process_user_input(self, user_input):
+        # Get truncated context
         context = self.get_relevant_context(user_input)
+        
+        # Create a concise prompt using the truncated context
         rag_message = RAG_PROMPT.format(context=context, question=user_input)
         
-        self.session_state.messages.append({"role": "user", "content": rag_message})
+        # Add the user message to session state
+        self.session_state.messages.append({"role": "user", "content": user_input})
         
+        # Generate a response with a limited token count to keep it concise
         response_message = self.generate_message(
             messages=self.session_state.messages,
-            max_tokens=2048,
+            max_tokens=1024,  # Reduced token count for concise responses
         )
         
+        # Check if there's an error
         if "error" in response_message:
             return f"An error occurred: {response_message['error']}"
         
+        # Handle the response type
         if response_message.content[0].type == "text":
             response_text = response_message.content[0].text
             self.session_state.messages.append(
@@ -90,8 +102,7 @@ class ChatBot:
             course_level = func_params['course_level']
             course_name = func_params['course_name']
             
-            # This is where you would typically query a database or structured data source
-            # For now, we'll use a dictionary as a simple example
+            # Example course information database
             course_info = {
                 "Dental College": {
                     "undergraduate": {
@@ -109,7 +120,6 @@ class ChatBot:
                         "M.Tech in Structural Engineering": "2-year advanced program in structural design and analysis."
                     }
                 }
-                # Add more institutions and courses as needed
             }
             
             if institution in course_info and course_level in course_info[institution] and course_name in course_info[institution][course_level]:
