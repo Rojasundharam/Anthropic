@@ -7,7 +7,6 @@ from googleapiclient.discovery import build
 import streamlit as st
 
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
-REDIRECT_URI = 'http://localhost:8501/callback'  # Fixed redirect URI
 
 def get_drive_service():
     creds = None
@@ -21,12 +20,13 @@ def get_drive_service():
             flow = Flow.from_client_secrets_file(
                 'credentials.json',
                 scopes=SCOPES,
-                redirect_uri=REDIRECT_URI
+                redirect_uri='urn:ietf:wg:oauth:2.0:oob'
             )
             
             auth_url, _ = flow.authorization_url(prompt='consent')
             
-            st.write(f"Please visit this URL to authorize the application: [Authorize]({auth_url})")
+            st.write("Please visit this URL to authorize the application:")
+            st.markdown(f"[Authorize]({auth_url})")
             auth_code = st.text_input("Enter the authorization code:")
             
             if auth_code:
@@ -37,6 +37,7 @@ def get_drive_service():
                     st.experimental_rerun()
                 except Exception as e:
                     st.error(f"An error occurred: {str(e)}")
+                    return None
 
     if creds:
         return build('drive', 'v3', credentials=creds)
