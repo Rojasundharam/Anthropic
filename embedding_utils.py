@@ -1,36 +1,35 @@
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
-import os
-import pickle
+from sentence_transformers import SentenceTransformer
+import faiss
 
-SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+class EmbeddingUtil:
+    def __init__(self):
+        self.model = SentenceTransformer('all-MiniLM-L6-v2')
 
-def get_drive_service():
-    creds = None
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
-    return build('drive', 'v3', credentials=creds)
+    def create_embeddings(self, documents):
+        """
+        Create embeddings for the input documents.
+        :param documents: List of text documents
+        :return: A list of embeddings for the input documents
+        """
+        return self.model.encode(documents, convert_to_tensor=False)
 
-def get_documents(service):
-    results = service.files().list(
-        q="mimeType='application/vnd.google-apps.document'",
-        spaces='drive',
-        fields="nextPageToken, files(id, name, mimeType)"
-    ).execute()
-    return results.get('files', [])
+    def create_faiss_index(self, embeddings):
+        """
+        Create a FAISS index based on the provided embeddings.
+        :param embeddings: List of document embeddings
+        :return: FAISS index
+        """
+        index = faiss.IndexFlatL2(embeddings.shape[1])
+        index.add(embeddings)
+        return index
 
-def get_document_content(service, file_id):
-    document = service.files().export(fileId=file_id, mimeType='text/plain').execute()
-    return document.decode('utf-8')
+    def search_similar(self, query_embedding, index, embeddings):
+        """
+        Search for similar embeddings based on the query.
+        :param query_embedding: Embedding of the query text
+        :param index: FAISS index
+        :param embeddings: List of document embeddings
+        :return: List of indices of similar documents
+        """
+        D, I = index.search(query_embedding, k=5)
+        return I[0]
