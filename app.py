@@ -4,7 +4,7 @@ from config import TASK_SPECIFIC_INSTRUCTIONS
 from google_drive_utils import get_drive_service
 
 def main():
-    st.title("Chat with Eva, Acme Insurance Company's Assistant🤖")
+    st.title("JKKN Assistant🤖")
     
     drive_service = get_drive_service()
     
@@ -32,7 +32,7 @@ def main():
         st.chat_message("user").markdown(user_msg)
         
         with st.chat_message("assistant"):
-            with st.spinner("Eva is thinking..."):
+            with st.spinner("JKKN Assist is thinking..."):
                 response_placeholder = st.empty()
                 full_response = st.session_state.chatbot.process_user_input(user_msg)
                 response_placeholder.markdown(full_response)
